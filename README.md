@@ -10,8 +10,7 @@ Shapeshifter is an Elixir library for switching between Bitcoin transaction form
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `shapeshifter` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `shapeshifter` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -21,7 +20,39 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/shapeshifter](https://hexdocs.pm/shapeshifter).
+## Usage
+
+Using Shapeshifter couldn't be simpler. Under the hood Shapeshifter uses pattern matching to automatically determine the source format, so all you need to do is pass a transaction object of any format to the appropriate function of the format you want to convert to (from: `to_raw/2`, `to_tx/1`, `to_txo/1` or `to_bob/1`).
+
+```elixir
+# Convert to raw tx
+Shapeshifter.to_raw(tx)
+# => <<1, 0, 0, 0, ...>>
+
+# Convert to raw tx with hex encoding
+Shapeshifter.to_raw(tx, encoding: :hex)
+# => "01000000..."
+
+# Convert to BSV.Transaction struct
+Shapeshifter.to_tx(tx)
+# => %BSV.Transaction{}
+
+# Convert to TXO map
+Shapeshifter.to_txo(tx)
+# => %{"in" => [...], "out" => [...], ...}
+
+# Convert to BOB map
+Shapeshifter.to_bob(tx)
+# => %{"in" => [...], "out" => [...], ...}
+```
+
+For more advanced use, Shapeshifter can also be used to convert individual inputs and outputs between the supported formats.
+
+For more examples, refer to the [full documentation](https://hexdocs.pm/shapeshifter).
+
+## License
+
+Shapeshifter is open source and released under the [Apache-2 License](https://github.com/libitx/shapeshifter/blob/master/LICENSE).
+
+© Copyright 2020 libitx.
 
