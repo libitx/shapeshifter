@@ -1,4 +1,4 @@
-defmodule Shapeshifter.Txo do
+defmodule Shapeshifter.TXO do
   @moduledoc """
   TODO
   """
