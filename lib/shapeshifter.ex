@@ -2,40 +2,52 @@ defmodule Shapeshifter do
   @moduledoc """
   Documentation for `Shapeshifter`.
   """
-  defstruct [:src, :src_format]
+  defstruct [:src, :format]
 
   @typedoc "TODO"
-  @type t :: %{
-    src: BSV.Transaction.t | map,
-    src_format: :tx | :txo | :bob
+  @type t :: %__MODULE__{
+    src: BSV.Transaction.t | txo | bob,
+    format: :tx | :txo | :bob
   }
 
+  @typedoc "TODO"
+  @type tx :: binary | BSV.Transaction.t | txo | bob
+
+  @typedoc "TODO"
+  @type txo :: %{
+    required(String.t) => String.t | integer | list
+  }
+
+  @typedoc "TODO"
+  @type bob :: %{
+    required(String.t) => String.t | integer | list
+  }
 
   @doc """
   TODO
   """
-  @spec from(binary | BSV.Transaction.t | map) :: {:ok, t} | {:error, Exception.t}
-  def from(src)
-
-  def from(rawtx) when is_binary(rawtx) do
+  @spec new(tx) :: {:ok, t} | {:error, Exception.t}
+  def new(tx) when is_binary(tx) do
     try do
       {%BSV.Transaction{} = tx, ""} = cond do
-        rem(byte_size(rawtx), 2) == 0 && String.match?(rawtx, ~r/^[a-f0-9]+$/i) ->
-          BSV.Transaction.parse(rawtx, encoding: :hex)
+        rem(byte_size(tx), 2) == 0 && String.match?(tx, ~r/^[a-f0-9]+$/i) ->
+          BSV.Transaction.parse(tx, encoding: :hex)
         true ->
-          BSV.Transaction.parse(rawtx)
+          BSV.Transaction.parse(tx)
       end
-      validate(%__MODULE__{src: tx, src_format: :tx})
+      validate(%__MODULE__{src: tx, format: :tx})
     rescue
       _ ->
-        {:error, %ArgumentError{message: "The src value is not a valid Bitcoin transaction."}}
+        {:error, %ArgumentError{message: "The source tx is not a valid Bitcoin transaction."}}
     end
   end
 
-  def from(%BSV.Transaction{} = src),
-    do: validate(%__MODULE__{src: src, src_format: :tx})
+  def new(%BSV.Transaction{} = tx),
+    do: validate(%__MODULE__{src: tx, format: :tx})
 
-  def from(%{"in" => ins, "out" => outs} = src) do
+  def new(%{"in" => ins, "out" => outs} = tx)
+    when is_list(ins) and is_list(outs)
+  do
     format = cond do
       Enum.any?(ins ++ outs, & is_list(&1["tape"])) ->
         :bob
@@ -43,98 +55,100 @@ defmodule Shapeshifter do
         :txo
     end
 
-    validate(%__MODULE__{src: src, src_format: format})
+    validate(%__MODULE__{src: tx, format: format})
   end
 
-  def from(src) when is_map(src),
-    do: validate(%__MODULE__{src: src, src_format: :txo})
+  def new(src) when is_map(src),
+    do: validate(%__MODULE__{src: src, format: :txo})
 
 
   @doc """
   TODO
   """
-  @spec to_raw(t, keyword) :: binary
-  def to_raw(shifter, options \\ [])
+  @spec to_raw(t | tx, keyword) :: {:ok, binary} | {:error, Exception.t}
+  def to_raw(tx, options \\ [])
 
-  def to_raw(%__MODULE__{src_format: :tx} = shifter, opts) do
-    encoding = Keyword.get(opts, :encoding)
-    BSV.Transaction.serialize(shifter.src, encoding: encoding)
+  def to_raw(%__MODULE__{format: :tx} = tx, options) do
+    encoding = Keyword.get(options, :encoding)
+    {:ok, BSV.Transaction.serialize(tx.src, encoding: encoding)}
   end
 
-  def to_raw(%__MODULE__{} = shifter, opts) do
-    encoding = Keyword.get(opts, :encoding)
-    BSV.Transaction.serialize(to_tx(shifter), encoding: encoding)
+  def to_raw(%__MODULE__{} = tx, options) do
+    encoding = Keyword.get(options, :encoding)
+    with {:ok, tx} <- to_tx(tx) do
+      {:ok, BSV.Transaction.serialize(tx, encoding: encoding)}
+    end
   end
 
-
-
-  @doc """
-  TODO
-  """
-  @spec to_tx(t) :: BSV.Transaction.t
-  def to_tx(shifter)
-
-  def to_tx(%__MODULE__{src_format: :tx} = shifter),
-    do: shifter.src
-
-  def to_tx(%__MODULE__{src_format: :txo} = shifter),
-    do: Shapeshifter.Txo.to_tx(shifter.src)
-
-  def to_tx(%__MODULE__{src_format: :bob} = shifter),
-    do: Shapeshifter.Bob.to_tx(shifter.src)
-
-
-  @doc """
-  TODO
-  """
-  @spec to_txo(t) :: map
-  def to_txo(shifter)
-
-  def to_txo(%__MODULE__{src_format: :txo} = shifter),
-    do: shifter.src
-
-  def to_txo(%__MODULE__{} = shifter) do
-    Shapeshifter.Txo.from(shifter)
+  def to_raw(tx, options) do
+    with {:ok, tx} <- new(tx), do: to_raw(tx, options)
   end
 
 
   @doc """
   TODO
   """
-  @spec to_bob(t) :: map
-  def to_bob(shifter)
+  @spec to_tx(t | tx) :: {:ok, BSV.Transaction.t} | {:error, Exception.t}
+  def to_tx(tx)
 
-  def to_bob(%__MODULE__{src_format: :bob} = shifter),
-    do: shifter.src
+  def to_tx(%__MODULE__{format: :tx} = tx),
+    do: {:ok, tx.src}
 
-  def to_bob(%__MODULE__{} = shifter) do
-    Shapeshifter.Bob.from(shifter)
+  def to_tx(%__MODULE__{format: :txo} = tx),
+    do: {:ok, Shapeshifter.Txo.to_tx(tx)}
+
+  def to_tx(%__MODULE__{format: :bob} = tx),
+    do: {:ok, Shapeshifter.Bob.to_tx(tx)}
+
+  def to_tx(tx) do
+    with {:ok, tx} <- new(tx), do: to_tx(tx)
   end
 
 
+  @doc """
+  TODO
+  """
+  @spec to_txo(t | tx) :: {:ok, txo} | {:error, Exception.t}
+  def to_txo(%__MODULE__{} = tx) do
+    {:ok, Shapeshifter.Txo.new(tx)}
+  end
 
-  #def to({:error, reason}, _format, _opts), do: {:error, reason}
+  def to_txo(tx) do
+    with {:ok, tx} <- new(tx), do: to_txo(tx)
+  end
 
+
+  @doc """
+  TODO
+  """
+  @spec to_bob(t | tx) :: {:ok, bob} | {:error, Exception.t}
+  def to_bob(%__MODULE__{} = tx) do
+    {:ok, Shapeshifter.Bob.new(tx)}
+  end
+
+  def to_bob(tx) do
+    with {:ok, tx} <- new(tx), do: to_bob(tx)
+  end
 
 
   # TODO
-  defp validate(%__MODULE__{src_format: :tx} = shifter) do
+  defp validate(%__MODULE__{format: :tx} = shifter) do
     case shifter.src do
       %BSV.Transaction{} ->
         {:ok, shifter}
       _ ->
-        {:error, %ArgumentError{message: "The src value is not a BSV.Transaction type."}}
+        {:error, %ArgumentError{message: "The src tx is not a BSV.Transaction type."}}
     end
   end
 
-  defp validate(%__MODULE__{src_format: fmt} = shifter)
+  defp validate(%__MODULE__{format: fmt} = shifter)
     when fmt in [:txo, :bob]
   do
     case Enum.all?(["tx", "in", "out"], & Map.has_key?(shifter.src, &1)) do
       true ->
         {:ok, shifter}
       false ->
-        {:error, %ArgumentError{message: "The src value is not a valid TXO or BOB map"}}
+        {:error, %ArgumentError{message: "The src tx is not a valid TXO or BOB map"}}
     end
   end
 

@@ -7,17 +7,17 @@ defmodule Shapeshifter.Txo do
   @doc """
   TODO
   """
-  @spec from(Shapeshifter.t) :: map
-  def from(%Shapeshifter{src: tx, src_format: :tx} = _shifter) do
+  @spec new(Shapeshifter.t) :: map
+  def new(%Shapeshifter{src: tx, format: :tx} = _shifter) do
     txid = BSV.Transaction.get_txid(tx)
 
     ins = tx.inputs
     |> Enum.with_index
-    |> Enum.map(&input_from/1)
+    |> Enum.map(&cast_input/1)
 
     outs = tx.outputs
     |> Enum.with_index
-    |> Enum.map(&output_from/1)
+    |> Enum.map(&cast_output/1)
 
     %{
       "tx" => %{"h" => txid},
@@ -27,9 +27,11 @@ defmodule Shapeshifter.Txo do
     }
   end
 
-  def from(%Shapeshifter{src: src, src_format: :bob}) do
-    ins = Enum.map(src["in"], &input_from/1)
-    outs = Enum.map(src["out"], &output_from/1)
+  def new(%Shapeshifter{src: src, format: :txo}), do: src
+
+  def new(%Shapeshifter{src: src, format: :bob}) do
+    ins = Enum.map(src["in"], &cast_input/1)
+    outs = Enum.map(src["out"], &cast_output/1)
 
     src
     |> Map.delete("_id")
@@ -38,12 +40,11 @@ defmodule Shapeshifter.Txo do
   end
 
 
-
   @doc """
   TODO
   """
-  @spec input_from({BSV.Transaction.Input.t | map, integer}) :: map
-  def input_from({%BSV.Transaction.Input{} = src, index}) do
+  @spec cast_input({BSV.Transaction.Input.t | map, integer}) :: map
+  def cast_input({%BSV.Transaction.Input{} = src, index}) do
     input = %{
       "i" => index,
       "seq" => src.sequence,
@@ -60,15 +61,15 @@ defmodule Shapeshifter.Txo do
     |> Enum.reduce(input, &from_script_chunk/2)
   end
 
-  def input_from(%{"tape" => _tape} = src),
+  def cast_input(%{"tape" => _tape} = src),
     do: from_bob_tape(src)
 
 
   @doc """
   TODO
   """
-  @spec output_from({BSV.Transaction.Output.t | map, integer}) :: map
-  def output_from({%BSV.Transaction.Output{} = src, index}) do
+  @spec cast_output({BSV.Transaction.Output.t | map, integer}) :: map
+  def cast_output({%BSV.Transaction.Output{} = src, index}) do
     output = %{
       "i" => index,
       "e" => %{
@@ -84,27 +85,21 @@ defmodule Shapeshifter.Txo do
     |> Enum.reduce(output, &from_script_chunk/2)
   end
 
-  def output_from(%{"tape" => _tape} = src),
+  def cast_output(%{"tape" => _tape} = src),
     do: from_bob_tape(src)
-
-
-  # TODO
-  defp from_bob_tape(%{"tape" => tape} = src) do
-    target = src
-    |> Map.delete("tape")
-    |> Map.put("len", 0)
-
-    tape
-    |> Enum.flat_map(& &1["cell"])
-    |> Enum.reduce(target, &from_bob_cell/2)
-  end
 
 
   @doc """
   TODO
   """
-  @spec to_tx(map) :: BSV.Transaction.t
-  def to_tx(%{"in" => ins, "out" => outs} = src) do
+  @spec to_tx(%Shapeshifter{
+    src: map,
+    format: :txo
+  }) :: BSV.Transaction.t
+  def to_tx(%Shapeshifter{
+    src: %{"in" => ins, "out" => outs} = src,
+    format: :txo
+  }) do
     %BSV.Transaction{
       inputs: Enum.map(ins, &to_tx_input/1),
       outputs: Enum.map(outs, &to_tx_output/1),
@@ -113,6 +108,10 @@ defmodule Shapeshifter.Txo do
   end
 
 
+  @doc """
+  TODO
+  """
+  @spec to_tx_input(map) :: BSV.Transaction.Input.t
   def to_tx_input(%{} = src) do
     %BSV.Transaction.Input{
       output_index: get_in(src, ["e", "i"]),
@@ -123,6 +122,10 @@ defmodule Shapeshifter.Txo do
   end
 
 
+  @doc """
+  TODO
+  """
+  @spec to_tx_output(map) :: BSV.Transaction.Output.t
   def to_tx_output(%{} = src) do
     %BSV.Transaction.Output{
       satoshis: get_in(src, ["e", "v"]),
@@ -141,6 +144,18 @@ defmodule Shapeshifter.Txo do
       "b#{index}" => Base.encode64(data),
       "h#{index}" => Base.encode16(data, case: :lower),
     })
+  end
+
+
+  # TODO
+  defp from_bob_tape(%{"tape" => tape} = src) do
+    target = src
+    |> Map.delete("tape")
+    |> Map.put("len", 0)
+
+    tape
+    |> Enum.flat_map(& &1["cell"])
+    |> Enum.reduce(target, &from_bob_cell/2)
   end
 
 
