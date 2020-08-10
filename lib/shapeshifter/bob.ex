@@ -1,11 +1,18 @@
 defmodule Shapeshifter.BOB do
   @moduledoc """
-  TODO
+  Module for converting to and from [`BOB`](`t:Shapeshifter.bob/0`) structured
+  maps.
+
+  Usually used internally, although can be used directly for specific use cases
+  such as converting single inputs and outputs to and from [`BOB`](`t:Shapeshifter.bob/0`)
+  formatted maps.
   """
+  import Shapeshifter.Shared
 
 
   @doc """
-  TODO
+  Creates a new [`BOB`](`t:Shapeshifter.bob/0`) formatted map from the given
+  [`Shapeshifter`](`t:Shapeshifter.t/0`) struct.
   """
   @spec new(Shapeshifter.t) :: map
   def new(%Shapeshifter{src: tx, format: :tx}) do
@@ -41,7 +48,11 @@ defmodule Shapeshifter.BOB do
 
 
   @doc """
-  TODO
+  Converts the given input parameters to a [`BOB`](`t:Shapeshifter.bob/0`)
+  formatted input.
+
+  Accepts either a [`BSV Input`](`t:BSV.Transaction.Input.t/0`) struct or a
+  [`TXO`](`t:Shapeshifter.txo/0`) formatted input.
   """
   @spec cast_input({BSV.Transaction.Input.t | map, integer}) :: map
   def cast_input({%BSV.Transaction.Input{} = src, index}) do
@@ -71,7 +82,11 @@ defmodule Shapeshifter.BOB do
 
 
   @doc """
-  TODO
+  Converts the given output parameters to a [`BOB`](`t:Shapeshifter.bob/0`)
+  formatted output.
+
+  Accepts either a [`BSV Output`](`t:BSV.Transaction.Output.t/0`) struct or a
+  [`TXO`](`t:Shapeshifter.txo/0`) formatted output.
   """
   @spec cast_output({BSV.Transaction.Output.t | map, integer}) :: map
   def cast_output({%BSV.Transaction.Output{} = src, index}) do
@@ -100,7 +115,8 @@ defmodule Shapeshifter.BOB do
 
 
   @doc """
-  TODO
+  Converts the given [`BOB`](`t:Shapeshifter.bob/0`) formatted transaction back
+  to a [`BSV Transaction`](`t:BSV.Transaction.t/0`) struct.
   """
   @spec to_tx(%Shapeshifter{
     src: map,
@@ -119,7 +135,8 @@ defmodule Shapeshifter.BOB do
 
 
   @doc """
-  TODO
+  Converts the given [`BOB`](`t:Shapeshifter.bob/0`) formatted input back to a
+  [`BSV Input`](`t:BSV.Transaction.Input.t/0`) struct.
   """
   @spec to_tx_input(map) :: BSV.Transaction.Input.t
   def to_tx_input(%{} = src) do
@@ -133,7 +150,8 @@ defmodule Shapeshifter.BOB do
 
 
   @doc """
-  TODO
+  Converts the given [`BOB`](`t:Shapeshifter.bob/0`) formatted output back to a
+  [`BSV Output`](`t:BSV.Transaction.Output.t/0`) struct.
   """
   @spec to_tx_output(map) :: BSV.Transaction.Output.t
   def to_tx_output(%{} = src) do
@@ -144,7 +162,8 @@ defmodule Shapeshifter.BOB do
   end
 
 
-  # TODO
+  # Converts a BSV Script chunk to BOB parameters. The index is given with the
+  # script chunk.
   defp from_script_chunk({opcode, index}, {[%{"i" => i} = head | tape], t})
     when is_atom(opcode)
   do
@@ -192,7 +211,7 @@ defmodule Shapeshifter.BOB do
   end
 
 
-  # TODO
+  # Converts a TXO formatted input/output to a BOB formatted tape.
   defp from_txo_object(%{"len" => len} = src) do
     target = Map.take(src, ["i", "seq", "e"])
 
@@ -213,7 +232,7 @@ defmodule Shapeshifter.BOB do
   end
 
 
-  # TODO
+  # Converts TXO formatted parameters to a BOB formatted cell.
   defp from_txo_attr(
     %{"o" => opcode, "ii" => index},
     {[%{"i" => i} = head | tape], t}
@@ -257,7 +276,7 @@ defmodule Shapeshifter.BOB do
   end
 
 
-  # TODO
+  # Converts a BOB formatted tape into a BSV Script struct.
   defp to_tx_script(tape) when is_list(tape) do
     tape
     |> Enum.intersperse("|")
@@ -284,27 +303,5 @@ defmodule Shapeshifter.BOB do
       _ -> BSV.Script.push(script, "|")
     end
   end
-
-
-
-  # TODO
-  def script_address([:OP_DUP, :OP_HASH160, hash, :OP_EQUALVERIFY, :OP_CHECKSIG | _rest]) do
-    %BSV.Address{hash: hash}
-    |> BSV.Address.to_string
-  end
-
-  def script_address([_sig, pubkey]) do
-    cond do
-      byte_size(pubkey) == 33 ->
-        pubkey
-        |> BSV.Address.from_public_key
-        |> BSV.Address.to_string
-      true ->
-        false
-    end
-  end
-
-  def script_address(_), do: false
-
 
 end

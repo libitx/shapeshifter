@@ -20,11 +20,10 @@ defmodule Shapeshifter do
 
   ## Usage
 
-  Using Shapeshifter couldn't be simpler. Under the hood Shapeshifter uses
-  pattern matching to automatically determine the source format, so all you need
-  to do is pass a transaction object of any format to the appropriate function
-  of the format you want to convert to (from: `to_raw/2`, `to_tx/1`, `to_txo/1`
-  or `to_bob/1`).
+  Using Shapeshifter couldn't be simpler. Under the hood pattern matching is
+  used to automatically determine the source format, so all you need to do is
+  pass a transaction object of **any** format to the appropriate function of the
+  format you want to convert to (from: `to_raw/2`, `to_tx/1`, `to_txo/1` or `to_bob/1`).
 
       # Convert to raw tx
       iex> Shapeshifter.to_raw(tx)

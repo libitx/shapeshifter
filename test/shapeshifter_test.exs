@@ -1,6 +1,5 @@
 defmodule ShapeshifterTest do
   use ExUnit.Case
-  doctest Shapeshifter
 
 
   describe "new/1" do

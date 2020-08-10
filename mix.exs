@@ -8,7 +8,21 @@ defmodule Shapeshifter.MixProject do
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      name: "Shapeshifter",
+      description: "Shapeshifter lets you quickly and simply switch between Bitcoin transaction formats.",
+      source_url: "https://github.com/libitx/shapeshifter",
+      docs: [
+        main: "Shapeshifter"
+      ],
+      package: [
+        name: "shapeshifter",
+        files: ~w(lib .formatter.exs mix.exs README.md LICENSE),
+        licenses: ["Apache-2.0"],
+        links: %{
+          "GitHub" => "https://github.com/libitx/shapeshifter"
+        }
+      ]
     ]
   end
 
