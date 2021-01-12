@@ -14,7 +14,7 @@ defmodule Shapeshifter do
 
       def deps do
         [
-          {:shapeshifter, "~> 0.1.0"}
+          {:shapeshifter, "~> 0.1"}
         ]
       end
 

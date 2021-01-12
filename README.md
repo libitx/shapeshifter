@@ -15,7 +15,7 @@ The package can be installed by adding `shapeshifter` to your list of dependenci
 ```elixir
 def deps do
   [
-    {:shapeshifter, "~> 0.1.0"}
+    {:shapeshifter, "~> 0.1"}
   ]
 end
 ```
