@@ -177,6 +177,20 @@ defmodule ShapeshifterTest do
     test "returns error when given src tx" do
       assert {:error, %ArgumentError{}} = Shapeshifter.to_bob(%{})
     end
+
+    test "currectly indexes piped cells from tx" do
+      assert {:ok, res} = Shapeshifter.to_bob(TestPipeTx.rawtx)
+      assert res["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(1) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"])) == TestPipeTx.bob["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(1) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"]))
+      assert res["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(2) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"])) == TestPipeTx.bob["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(2) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"]))
+      assert res["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(3) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"])) == TestPipeTx.bob["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(3) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"]))
+    end
+
+    test "currectly indexes piped cells from txo" do
+      assert {:ok, res} = Shapeshifter.to_bob(TestPipeTx.txo)
+      assert res["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(1) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"])) == TestPipeTx.bob["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(1) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"]))
+      assert res["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(2) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"])) == TestPipeTx.bob["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(2) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"]))
+      assert res["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(3) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"])) == TestPipeTx.bob["out"] |> Enum.at(0) |> Map.get("tape") |> Enum.at(3) |> Map.get("cell") |> Enum.map(& Map.take(&1, ["i", "ii"]))
+    end
   end
 
 end

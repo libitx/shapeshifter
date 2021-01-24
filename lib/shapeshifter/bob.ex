@@ -181,14 +181,14 @@ defmodule Shapeshifter.BOB do
 
     case opcode do
       :OP_RETURN ->
-        {[%{"i" => i+1} | [head | tape]], index}
+        {[%{"i" => i+1} | [head | tape]], index + 1}
       _ ->
         {[head | tape], t}
     end
   end
 
   defp from_script_chunk({"|", index}, {[%{"i" => i } = head | tape], _t}) do
-    {[%{"i" => i+1} | [head | tape]], index}
+    {[%{"i" => i+1} | [head | tape]], index + 1}
   end
 
   defp from_script_chunk({data, index}, {[head | tape], t})
