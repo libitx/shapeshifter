@@ -8,6 +8,19 @@
 
 Shapeshifter is an Elixir library for switching between Bitcoin transaction formats. Quickly and simply shift between raw tx binaries, `BSV.Transaction` structs, and `TXO` and `BOB` transaction formats.
 
+## Sponsors
+
+<p align="center">Supported by:</p>
+<p align="center">
+  <a href="https://coingeek.com" target="_blank" rel="noopener noreferrer">
+    <img src="https://www.chronoslabs.net/img/badges/coingeek.png" width="180" alt="Coingeek">
+  </a>
+</p>
+
+Your sponsorship will help us continue to release and maintain software that Bitcoin businesses and developers depend on.
+
+#### 👉 [Sponsor Chronos Labs' open source work](https://www.chronoslabs.net/sponsor/)
+
 ## Installation
 
 The package can be installed by adding `shapeshifter` to your list of dependencies in `mix.exs`:
