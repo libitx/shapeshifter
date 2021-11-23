@@ -16,14 +16,14 @@ defmodule Shapeshifter.BOB do
   """
   @spec new(Shapeshifter.t) :: map
   def new(%Shapeshifter{src: tx, format: :tx}) do
-    txid = BSV.Transaction.get_txid(tx)
+    txid = BSV.Tx.get_txid(tx)
 
     ins = tx.inputs
-    |> Enum.with_index
+    |> Enum.with_index()
     |> Enum.map(&cast_input/1)
 
     outs = tx.outputs
-    |> Enum.with_index
+    |> Enum.with_index()
     |> Enum.map(&cast_output/1)
 
     %{
@@ -51,28 +51,28 @@ defmodule Shapeshifter.BOB do
   Converts the given input parameters to a [`BOB`](`t:Shapeshifter.bob/0`)
   formatted input.
 
-  Accepts either a [`BSV Input`](`t:BSV.Transaction.Input.t/0`) struct or a
+  Accepts either a [`BSV Input`](`t:BSV.TxIn.t/0`) struct or a
   [`TXO`](`t:Shapeshifter.txo/0`) formatted input.
   """
-  @spec cast_input({BSV.Transaction.Input.t | map, integer}) :: map
-  def cast_input({%BSV.Transaction.Input{} = src, index}) do
+  @spec cast_input({BSV.TxIn.t | map, integer}) :: map
+  def cast_input({%BSV.TxIn{} = src, index}) do
     input = %{
       "i" => index,
       "seq" => src.sequence,
       "e" => %{
-        "h" => src.output_txid,
-        "i" => src.output_index,
+        "h" => BSV.OutPoint.get_txid(src.outpoint),
+        "i" => src.outpoint.vout,
         "a" => script_address(src.script.chunks)
       }
     }
 
     tape = src.script.chunks
-    |> Enum.with_index
+    |> Enum.with_index()
     |> Enum.reduce({[%{"i" => 0}], 0}, &from_script_chunk/2)
     |> elem(0)
     |> Enum.reject(& &1 == %{})
     |> Enum.map(fn t -> Map.update!(t, "cell", &Enum.reverse/1) end)
-    |> Enum.reverse
+    |> Enum.reverse()
 
     Map.put(input, "tape", tape)
   end
@@ -85,11 +85,11 @@ defmodule Shapeshifter.BOB do
   Converts the given output parameters to a [`BOB`](`t:Shapeshifter.bob/0`)
   formatted output.
 
-  Accepts either a [`BSV Output`](`t:BSV.Transaction.Output.t/0`) struct or a
+  Accepts either a [`BSV Output`](`t:BSV.TxOut.t/0`) struct or a
   [`TXO`](`t:Shapeshifter.txo/0`) formatted output.
   """
-  @spec cast_output({BSV.Transaction.Output.t | map, integer}) :: map
-  def cast_output({%BSV.Transaction.Output{} = src, index}) do
+  @spec cast_output({BSV.TxOut.t | map, integer}) :: map
+  def cast_output({%BSV.TxOut{} = src, index}) do
     output = %{
       "i" => index,
       "e" => %{
@@ -100,12 +100,12 @@ defmodule Shapeshifter.BOB do
     }
 
     tape = src.script.chunks
-    |> Enum.with_index
+    |> Enum.with_index()
     |> Enum.reduce({[%{"i" => 0}], 0}, &from_script_chunk/2)
     |> elem(0)
     |> Enum.filter(& Map.has_key?(&1, "cell"))
     |> Enum.map(fn t -> Map.update!(t, "cell", &Enum.reverse/1) end)
-    |> Enum.reverse
+    |> Enum.reverse()
 
     Map.put(output, "tape", tape)
   end
@@ -116,17 +116,17 @@ defmodule Shapeshifter.BOB do
 
   @doc """
   Converts the given [`BOB`](`t:Shapeshifter.bob/0`) formatted transaction back
-  to a [`BSV Transaction`](`t:BSV.Transaction.t/0`) struct.
+  to a [`BSV Transaction`](`t:BSV.Tx.t/0`) struct.
   """
   @spec to_tx(%Shapeshifter{
     src: map,
     format: :bob
-  }) :: BSV.Transaction.t
+  }) :: BSV.Tx.t
   def to_tx(%Shapeshifter{
     src: %{"in" => ins, "out" => outs} = src,
     format: :bob
   }) do
-    %BSV.Transaction{
+    %BSV.Tx{
       inputs: Enum.map(ins, &to_tx_input/1),
       outputs: Enum.map(outs, &to_tx_output/1),
       lock_time: src["lock"]
@@ -136,13 +136,15 @@ defmodule Shapeshifter.BOB do
 
   @doc """
   Converts the given [`BOB`](`t:Shapeshifter.bob/0`) formatted input back to a
-  [`BSV Input`](`t:BSV.Transaction.Input.t/0`) struct.
+  [`BSV Input`](`t:BSV.TxIn.t/0`) struct.
   """
-  @spec to_tx_input(map) :: BSV.Transaction.Input.t
+  @spec to_tx_input(map) :: BSV.TxIn.t
   def to_tx_input(%{} = src) do
-    %BSV.Transaction.Input{
-      output_index: get_in(src, ["e", "i"]),
-      output_txid: get_in(src, ["e", "h"]),
+    %BSV.TxIn{
+      outpoint: %BSV.OutPoint{
+        hash: get_in(src, ["e", "h"]) |> BSV.Util.decode!(:hex) |> BSV.Util.reverse_bin(),
+        vout: get_in(src, ["e", "i"])
+      },
       sequence: src["seq"],
       script: to_tx_script(src["tape"])
     }
@@ -151,11 +153,11 @@ defmodule Shapeshifter.BOB do
 
   @doc """
   Converts the given [`BOB`](`t:Shapeshifter.bob/0`) formatted output back to a
-  [`BSV Output`](`t:BSV.Transaction.Output.t/0`) struct.
+  [`BSV Output`](`t:BSV.TxOut.t/0`) struct.
   """
-  @spec to_tx_output(map) :: BSV.Transaction.Output.t
+  @spec to_tx_output(map) :: BSV.TxOut.t
   def to_tx_output(%{} = src) do
-    %BSV.Transaction.Output{
+    %BSV.TxOut{
       satoshis: get_in(src, ["e", "v"]),
       script: to_tx_script(src["tape"])
     }
@@ -171,7 +173,7 @@ defmodule Shapeshifter.BOB do
     |> Map.put_new("cell", [])
     |> Map.update!("cell", fn cells ->
       cell = %{
-        "op" => BSV.Script.OpCode.get(opcode) |> elem(1),
+        "op" => BSV.OpCode.to_integer(opcode),
         "ops" => Atom.to_string(opcode),
         "i" => index - t,
         "ii" => index
@@ -226,7 +228,7 @@ defmodule Shapeshifter.BOB do
     |> elem(0)
     |> Enum.filter(& Map.has_key?(&1, "cell"))
     |> Enum.map(fn t -> Map.update!(t, "cell", &Enum.reverse/1) end)
-    |> Enum.reverse
+    |> Enum.reverse()
 
     Map.put(target, "tape", tape)
   end
@@ -241,7 +243,7 @@ defmodule Shapeshifter.BOB do
     |> Map.put_new("cell", [])
     |> Map.update!("cell", fn cells ->
       cell = %{
-        "op" => BSV.Script.OpCode.get(opcode) |> elem(1),
+        "op" => BSV.OpCode.to_integer(opcode),
         "ops" => opcode,
         "i" => index - t,
         "ii" => index

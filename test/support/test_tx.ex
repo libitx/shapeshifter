@@ -2,27 +2,25 @@ defmodule TestTx do
   # Random txid for test cases bd6b24195f978a7c54c89d379566a5260284b16fc549516408db18bd157663d1
   @rawtx "010000000115c0fffa734cdf9ec922d2bb5bfe64e4600bfbbf30bd5391f5e147212219fa4a000000006b48304502210098c8b9614394115f40a0f76ca6e952dc2808e851ca31f8813a9685ce9fb06c070220411fcdf4f9960d1c87dfaf60257c6d0ce4f90f9949d64538a156d067c949185541210236e4d6d01eae5c3c140f25ae17b03ba11ca7082bf4104d83927c734b0cddcf3fffffffff0422020000000000001976a914cbb23f1ded779b83199f969511ce42c29f35b5c988ac22020000000000001976a9146be162a1158bfe888084d458bbc44273c036bba588ac22020000000000001976a914d3ae0b1175fb49ee9bd0ede71faaf596aaf880a988ac00000000000000005f006a02bd0009746f6b656e697a6564041a0254324a0a3e12034355521a20c83ba405f34dbd99604be78e404eb71163e994b6e5a51214cb2035a48ce1d7bd2200220a080110918d90c0a2de162207080210c2a2b06e10b899f1f2b1e8bd941600000000"
 
-  @tx %BSV.Transaction{
-    change_index: nil,
-    change_script: nil,
-    fee: nil,
+  @tx %BSV.Tx{
     inputs: [
-      %BSV.Transaction.Input{
-        output_index: 0,
-        output_txid: "4afa19222147e1f59153bd30bffb0b60e464fe5bbbd222c99edf4c73faffc015",
+      %BSV.TxIn{
+        outpoint: %BSV.OutPoint{
+          hash: <<21, 192, 255, 250, 115, 76, 223, 158, 201, 34, 210, 187, 91, 254, 100, 228, 96, 11, 251, 191, 48, 189, 83, 145, 245, 225, 71, 33, 34, 25, 250, 74>>,
+          vout: 0
+        },
         script: %BSV.Script{
           chunks: [
             <<48, 69, 2, 33, 0, 152, 200, 185, 97, 67, 148, 17, 95, 64, 160, 247, 108, 166, 233, 82, 220, 40, 8, 232, 81, 202, 49, 248, 129, 58, 150, 133, 206, 159, 176, 108, 7, 2, 32, 65, 31, 205, 244, 249, 150, 13, 28, 135, 223, 175, 96, 37, 124, 109, 12, 228, 249, 15, 153, 73, 214, 69, 56, 161, 86, 208, 103, 201, 73, 24, 85, 65>>,
             <<2, 54, 228, 214, 208, 30, 174, 92, 60, 20, 15, 37, 174, 23, 176, 59, 161, 28, 167, 8, 43, 244, 16, 77, 131, 146, 124, 115, 75, 12, 221, 207, 63>>
           ]
         },
-        sequence: 4294967295,
-        utxo: nil
+        sequence: 4294967295
       }
     ],
     lock_time: 0,
     outputs: [
-      %BSV.Transaction.Output{
+      %BSV.TxOut{
         satoshis: 546,
         script: %BSV.Script{
           chunks: [
@@ -34,7 +32,7 @@ defmodule TestTx do
           ]
         }
       },
-      %BSV.Transaction.Output{
+      %BSV.TxOut{
         satoshis: 546,
         script: %BSV.Script{
           chunks: [
@@ -46,7 +44,7 @@ defmodule TestTx do
           ]
         }
       },
-      %BSV.Transaction.Output{
+      %BSV.TxOut{
         satoshis: 546,
         script: %BSV.Script{
           chunks: [
@@ -58,7 +56,7 @@ defmodule TestTx do
           ]
         }
       },
-      %BSV.Transaction.Output{
+      %BSV.TxOut{
         satoshis: 0,
         script: %BSV.Script{
           chunks: [

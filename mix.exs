@@ -4,8 +4,8 @@ defmodule Shapeshifter.MixProject do
   def project do
     [
       app: :shapeshifter,
-      version: "0.1.2",
-      elixir: "~> 1.10",
+      version: "0.2.0",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -36,8 +36,8 @@ defmodule Shapeshifter.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:bsv, "~> 0.3"},
-      {:ex_doc, "~> 0.22", only: :dev, runtime: false}
+      {:bsv, "~> 2.0"},
+      {:ex_doc, "~> 0.26", only: :dev, runtime: false}
     ]
   end
 

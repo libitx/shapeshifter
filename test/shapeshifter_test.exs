@@ -5,13 +5,13 @@ defmodule ShapeshifterTest do
   describe "new/1" do
     test "handles valid rawtx in hex format" do
       assert {:ok, %Shapeshifter{format: :tx} = shifter} = Shapeshifter.new(TestTx.rawtx)
-      assert %BSV.Transaction{} = shifter.src
+      assert %BSV.Tx{} = shifter.src
     end
 
     test "handles valid rawtx in binary format" do
       rawtx = Base.decode16!(TestTx.rawtx, case: :mixed)
       assert {:ok, %Shapeshifter{format: :tx} = shifter} = Shapeshifter.new(rawtx)
-      assert %BSV.Transaction{} = shifter.src
+      assert %BSV.Tx{} = shifter.src
     end
 
     test "returns error when given invalid hex" do
@@ -22,9 +22,9 @@ defmodule ShapeshifterTest do
       assert {:error, %ArgumentError{}} = Shapeshifter.new(<<0, 4, 5, 112, 222, 232, 11>>)
     end
 
-    test "handles BSV.Transaction struct" do
+    test "handles BSV.Tx struct" do
       assert {:ok, %Shapeshifter{format: :tx} = shifter} = Shapeshifter.new(TestTx.tx)
-      assert %BSV.Transaction{} = shifter.src
+      assert %BSV.Tx{} = shifter.src
     end
 
     test "handles valid TXO map" do
@@ -49,12 +49,12 @@ defmodule ShapeshifterTest do
       assert res == TestTx.rawtx
     end
 
-    test "converts BSV.Transaction struct to rawtx" do
+    test "converts BSV.Tx struct to rawtx" do
       assert {:ok, res} = Shapeshifter.to_raw(TestTx.tx)
       assert res == Base.decode16!(TestTx.rawtx, case: :mixed)
     end
 
-    test "converts BSV.Transaction struct to rawtx with hex encoding" do
+    test "converts BSV.Tx struct to rawtx with hex encoding" do
       assert {:ok, res} = Shapeshifter.to_raw(TestTx.tx, encoding: :hex)
       assert res == TestTx.rawtx
     end
@@ -76,28 +76,28 @@ defmodule ShapeshifterTest do
 
 
   describe "to_tx/1" do
-    test "converts rawtx to BSV.Transaction struct" do
+    test "converts rawtx to BSV.Tx struct" do
       assert {:ok, res} = Shapeshifter.to_tx(TestTx.rawtx)
       assert res == TestTx.tx
     end
 
-    test "handles BSV.Transaction struct to BSV.Transaction struct" do
+    test "handles BSV.Tx struct to BSV.Tx struct" do
       assert {:ok, res} = Shapeshifter.to_tx(TestTx.tx)
       assert res == TestTx.tx
     end
 
-    test "converts TXO map to BSV.Transaction struct" do
+    test "converts TXO map to BSV.Tx struct" do
       assert {:ok, res} = Shapeshifter.to_tx(TestTx.txo)
       assert length(res.inputs) == length(TestTx.tx.inputs)
       assert length(res.outputs) == length(TestTx.tx.outputs)
-      assert BSV.Transaction.get_txid(res) == get_in(TestTx.txo, ["tx", "h"])
+      assert BSV.Tx.get_txid(res) == get_in(TestTx.txo, ["tx", "h"])
     end
 
-    test "converts BOB map to BSV.Transaction struct" do
+    test "converts BOB map to BSV.Tx struct" do
       assert {:ok, res} = Shapeshifter.to_tx(TestTx.bob)
       assert length(res.inputs) == length(TestTx.tx.inputs)
       assert length(res.outputs) == length(TestTx.tx.outputs)
-      assert BSV.Transaction.get_txid(res) == get_in(TestTx.bob, ["tx", "h"])
+      assert BSV.Tx.get_txid(res) == get_in(TestTx.bob, ["tx", "h"])
     end
 
     test "returns error when given src tx" do
@@ -118,7 +118,7 @@ defmodule ShapeshifterTest do
     end
 
     # Could do with some better tests here to test the txo attributes
-    test "converts BSV.Transaction struct to TXO map" do
+    test "converts BSV.Tx struct to TXO map" do
       assert {:ok, res} = Shapeshifter.to_txo(TestTx.tx)
       assert res["tx"] == TestTx.txo["tx"]
       assert length(res["in"]) == length(TestTx.txo["in"])
@@ -155,7 +155,7 @@ defmodule ShapeshifterTest do
     end
 
     # Could do with some better tests here to test the bob attributes
-    test "converts BSV.Transaction struct to BOB map" do
+    test "converts BSV.Tx struct to BOB map" do
       assert {:ok, res} = Shapeshifter.to_bob(TestTx.tx)
       assert res["tx"] == TestTx.bob["tx"]
       assert length(res["in"]) == length(TestTx.bob["in"])

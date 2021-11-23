@@ -5,7 +5,7 @@ defmodule Shapeshifter do
   ![GitHub](https://img.shields.io/github/license/libitx/shapeshifter?color=informational)
 
   Shapeshifter is an Elixir library for switching between Bitcoin transaction
-  formats. Quickly and simply shift between raw tx, [`BSV Transaction`](`t:BSV.Transaction.t/0`),
+  formats. Quickly and simply shift between raw tx, [`BSV Transaction`](`t:BSV.Tx.t/0`),
   [`TXO`](`t:txo/0`) and [`BOB`](`t:bob/0`) transaction formats.
 
   ## Installation
@@ -14,7 +14,7 @@ defmodule Shapeshifter do
 
       def deps do
         [
-          {:shapeshifter, "~> 0.1"}
+          {:shapeshifter, "~> #{ Mix.Project.config[:version] }"}
         ]
       end
 
@@ -33,9 +33,9 @@ defmodule Shapeshifter do
       iex> Shapeshifter.to_raw(tx, encoding: :hex)
       "01000000..."
 
-      # Convert to BSV.Transaction struct
+      # Convert to BSV.Tx struct
       iex> Shapeshifter.to_tx(tx)
-      %BSV.Transaction{}
+      %BSV.Tx{}
 
       # Convert to TXO map
       iex> Shapeshifter.to_txo(tx)
@@ -53,7 +53,7 @@ defmodule Shapeshifter do
 
   @typedoc "Shapeshifter struct"
   @type t :: %__MODULE__{
-    src: BSV.Transaction.t | txo | bob,
+    src: BSV.Tx.t | txo | bob,
     format: :tx | :txo | :bob
   }
 
@@ -64,11 +64,11 @@ defmodule Shapeshifter do
   transaction formats:
 
   * Raw tx binary (with or without hex encoding)
-  * [`BSV Transaction`](`t:BSV.Transaction.t/0`) struct
+  * [`BSV Transaction`](`t:BSV.Tx.t/0`) struct
   * [`TXO`](`t:txo/0`) formatted map
   * [`BOB`](`t:bob/0`) formatted map
   """
-  @type tx :: binary | BSV.Transaction.t | txo | bob
+  @type tx :: binary | BSV.Tx.t | txo | bob
 
   @typedoc """
   Transaction Object format
@@ -94,7 +94,7 @@ defmodule Shapeshifter do
   Creates a new [`Shapeshifter`](`t:t/o`) from the given transaction.
 
   Accepts either a raw tx binary (with or without hex encoding),
-  [`BSV Transaction`](`t:BSV.Transaction.t/0`) struct, or [`TXO`](`t:txo/0`) or
+  [`BSV Transaction`](`t:BSV.Tx.t/0`) struct, or [`TXO`](`t:txo/0`) or
   [`BOB`](`t:bob/0`) formatted maps.
 
   Returns the [`Shapeshifter`](`t:t/o`) struct in an `:ok` tuple pair, or returns
@@ -102,21 +102,20 @@ defmodule Shapeshifter do
   """
   @spec new(tx) :: {:ok, t} | {:error, Exception.t}
   def new(tx) when is_binary(tx) do
-    try do
-      {%BSV.Transaction{} = tx, ""} = cond do
-        rem(byte_size(tx), 2) == 0 && String.match?(tx, ~r/^[a-f0-9]+$/i) ->
-          BSV.Transaction.parse(tx, encoding: :hex)
-        true ->
-          BSV.Transaction.parse(tx)
-      end
-      validate(%__MODULE__{src: tx, format: :tx})
-    rescue
+    encoding = cond do
+      rem(byte_size(tx), 2) == 0 && String.match?(tx, ~r/^[a-f0-9]+$/i) -> :hex
+      true -> :binary
+    end
+
+    case BSV.Tx.from_binary(tx, encoding: encoding) do
+      {:ok, tx} ->
+        validate(%__MODULE__{src: tx, format: :tx})
       _ ->
         {:error, %ArgumentError{message: "The source tx is not a valid Bitcoin transaction."}}
     end
   end
 
-  def new(%BSV.Transaction{} = tx),
+  def new(%BSV.Tx{} = tx),
     do: validate(%__MODULE__{src: tx, format: :tx})
 
   def new(%{"in" => ins, "out" => outs} = tx)
@@ -139,7 +138,7 @@ defmodule Shapeshifter do
   @doc """
   Converts the given transaction to a raw tx binary, with or without hex encoding.
 
-  Accepts either a [`BSV Transaction`](`t:BSV.Transaction.t/0`) struct, or
+  Accepts either a [`BSV Transaction`](`t:BSV.Tx.t/0`) struct, or
   [`TXO`](`t:txo/0`) or [`BOB`](`t:bob/0`) formatted maps.
 
   Returns the result in an `:ok` or `:error` tuple pair.
@@ -155,13 +154,13 @@ defmodule Shapeshifter do
 
   def to_raw(%__MODULE__{format: :tx} = tx, options) do
     encoding = Keyword.get(options, :encoding)
-    {:ok, BSV.Transaction.serialize(tx.src, encoding: encoding)}
+    {:ok, BSV.Tx.to_binary(tx.src, encoding: encoding)}
   end
 
   def to_raw(%__MODULE__{} = tx, options) do
     encoding = Keyword.get(options, :encoding)
     with {:ok, tx} <- to_tx(tx) do
-      {:ok, BSV.Transaction.serialize(tx, encoding: encoding)}
+      {:ok, BSV.Tx.to_binary(tx, encoding: encoding)}
     end
   end
 
@@ -171,14 +170,14 @@ defmodule Shapeshifter do
 
 
   @doc """
-  Converts the given transaction to a [`BSV Transaction`](`t:BSV.Transaction.t/0`) struct.
+  Converts the given transaction to a [`BSV Transaction`](`t:BSV.Tx.t/0`) struct.
 
   Accepts either a raw tx binary, or [`TXO`](`t:txo/0`) or [`BOB`](`t:bob/0`)
   formatted maps.
 
   Returns the result in an `:ok` or `:error` tuple pair.
   """
-  @spec to_tx(t | tx) :: {:ok, BSV.Transaction.t} | {:error, Exception.t}
+  @spec to_tx(t | tx) :: {:ok, BSV.Tx.t} | {:error, Exception.t}
   def to_tx(tx)
 
   def to_tx(%__MODULE__{format: :tx} = tx),
@@ -198,7 +197,7 @@ defmodule Shapeshifter do
   @doc """
   Converts the given transaction to the [`TXO`](`t:txo/0`) transaction format.
 
-  Accepts either a raw tx binary, [`BSV Transaction`](`t:BSV.Transaction.t/0`)
+  Accepts either a raw tx binary, [`BSV Transaction`](`t:BSV.Tx.t/0`)
   struct, or [`BOB`](`t:bob/0`) formatted map.
 
   Returns the result in an `:ok` or `:error` tuple pair.
@@ -216,7 +215,7 @@ defmodule Shapeshifter do
   @doc """
   Converts the given transaction to the [`BOB`](`t:bob/0`) transaction format.
 
-  Accepts either a raw tx binary, [`BSV Transaction`](`t:BSV.Transaction.t/0`)
+  Accepts either a raw tx binary, [`BSV Transaction`](`t:BSV.Tx.t/0`)
   struct, or [`TXO`](`t:txo/0`) formatted map.
 
   Returns the result in an `:ok` or `:error` tuple pair.
@@ -234,10 +233,10 @@ defmodule Shapeshifter do
   # Validates the given `Shapeshifter.t\0` struct.
   defp validate(%__MODULE__{format: :tx} = shifter) do
     case shifter.src do
-      %BSV.Transaction{} ->
+      %BSV.Tx{} ->
         {:ok, shifter}
       _ ->
-        {:error, %ArgumentError{message: "The src tx is not a BSV.Transaction type."}}
+        {:error, %ArgumentError{message: "The src tx is not a BSV.Tx type."}}
     end
   end
 
