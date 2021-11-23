@@ -6,7 +6,7 @@
 ![GitHub](https://img.shields.io/github/license/libitx/shapeshifter?color=informational)
 ![Build Status](https://img.shields.io/github/workflow/status/libitx/shapeshifter/Elixir%20CI)
 
-Shapeshifter is an Elixir library for switching between Bitcoin transaction formats. Quickly and simply shift between raw tx binaries, `BSV.Transaction` structs, and `TXO` and `BOB` transaction formats.
+Shapeshifter is an Elixir library for switching between Bitcoin transaction formats. Quickly and simply shift between raw tx binaries, `BSV.Tx` structs, and `TXO` and `BOB` transaction formats.
 
 ## Sponsors
 
@@ -46,9 +46,9 @@ Shapeshifter.to_raw(tx)
 Shapeshifter.to_raw(tx, encoding: :hex)
 # => "01000000..."
 
-# Convert to BSV.Transaction struct
+# Convert to BSV.Tx struct
 Shapeshifter.to_tx(tx)
-# => %BSV.Transaction{}
+# => %BSV.Tx{}
 
 # Convert to TXO map
 Shapeshifter.to_txo(tx)
